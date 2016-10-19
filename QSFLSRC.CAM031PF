@@ -1,0 +1,7 @@
+     A          R CAM031RF
+     A            CACRNO        16S 0       TEXT('CARD NUMBER')
+     A            CACRNM        30A         TEXT('CUSTOMER NAME')
+     A            CACIFN        14S 0       TEXT('CIF NUMBER')
+     A            CAADDR        50A         TEXT('ADDRESS')
+     A          K CACRNO
+     A          K CACRNM

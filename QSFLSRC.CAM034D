@@ -1,0 +1,51 @@
+                                            DSPSIZ(24 80 *DS3)
+                                            CA03(03 'EXIT')
+                                            CA12(12 'PREVIOUS')
+                R HEADER
+                                        1 30'ACCOUNT ENTRY DISPLAY'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                                        4 25'ORG'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                  S_ORG          3S 0B  4 35
+                                            FLDCSRPRG(S_ACC)
+        50                                  DSPATR(RI)
+                                        5 25'ACC'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                  S_ACC         12A  B  5 35
+                                            FLDCSRPRG(S_CCY)
+        51                                  DSPATR(RI)
+                                        6 25'CCY'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                  S_CCY          3A  B  6 35
+                                            FLDCSRPRG(S_PARTY)
+        52                                  DSPATR(RI)
+                                        7 25'PARTY'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                  S_PARTY       12A  B  7 35
+        53                                  DSPATR(RI)
+                R FOOTER
+                                            OVERLAY
+                                       22  5'F3 = EXIT'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                                       22 20'F12 = CANCEL'
+                                            DSPATR(HI)
+                                            COLOR(BLU)
+                R ACCSFL                    SFL
+                                            SFLMSGRCD(24)
+                  MSGKEY                    SFLMSGKEY
+                  PGMQ                      SFLPGMQ(10)
+                R ACCCTL                    SFLCTL(ACCSFL)
+                                            OVERLAY
+                                            SFLDSP
+                                            SFLDSPCTL
+                                            SFLINZ
+       N03                                  SFLEND(*PLUS)
+                                            SFLSIZ(0003)
+                                            SFLPAG(0001)
+                  PGMQ                      SFLPGMQ(10)

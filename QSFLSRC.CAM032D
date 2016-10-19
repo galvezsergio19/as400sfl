@@ -1,0 +1,70 @@
+     A                                      DSPSIZ(24 80 *DS3)
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     A          R FMTHED
+     A                                      OVERLAY
+     A            FHPGMQ        10A  O  1  2
+     A            FHSYNM        18A  O  1 13COLOR(WHT)
+     A                                  1 32'-'
+     A            FHFCNM        30A  O  1 34COLOR(BLU)
+     A            FHTYPE         3A  O  1 65COLOR(YLW)
+     A            FHENVI         3A  O  1 69COLOR(TRQ)
+     A                                  1 73DATE
+     A                                      EDTCDE(Y)
+     A            FHSFNM        10A     2  2
+     A            FHGNST        59A  O  2 13COLOR(WHT)
+     A                                  2 73TIME
+     A                                      EDTWRD('  :  :  ')
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     A          R SFL010                    SFL
+     A  14                                  SFLNXTCHG
+     A            S1OPTN         1A  B  7  8
+     A  50                                  DSPATR(RI)
+     A  50                                  DSPATR(PC)
+     A            S1CRNO        16S 0O  7 11
+     A            S1CRNM        30A  O  7 29
+     A            S1CIFN        14  0O  7 61
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     A          R CTL010                    SFLCTL(SFL010)
+     A                                      SFLSIZ(0010)
+     A                                      SFLPAG(0010)
+     A                                      OVERLAY
+     A                                      CA01(01)
+     A                                      ROLLUP(15)
+     A                                      ROLLDOWN(16)
+     A                                      SFLCSRRRN(&CSRRRN)
+     A N10                                  SFLDSP
+     A N11                                  SFLDSPCTL
+     A  12                                  SFLCLR
+     A N13                                  SFLEND(*MORE)
+     A            SFLRRN         4S 0H      SFLRCDNBR(CURSOR)
+     A            CSRRRN         5S 0H
+     A                                  5  7'Opt'
+     A                                      COLOR(WHT)
+     A                                  5 11'Card Number'
+     A                                      COLOR(WHT)
+     A                                  5 29'Customer Name'
+     A                                      COLOR(WHT)
+     A                                  5 61'CIF No'
+     A                                      COLOR(WHT)
+     A                                  6  7'-----------------------------------
+     A                                      -----------------------------------'
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     A          R FMT010
+     A                                      OVERLAY
+     A                                      CA02(02)
+     A                                  6  6'CARD NO.'
+     A                                      COLOR(WHT)
+     A                                  7  6'CUSTOMER NAME'
+     A                                      COLOR(WHT)
+     A                                  8  6'CIF NO.'
+     A                                      COLOR(WHT)
+     A            F1CRNO        16  0O  6 24
+     A            F1CRNM        30   O  7 24
+     A            F1CIFN        14  0O  8 24
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     A          R FMTMSG
+     A            FMCODE         7A  O 23  2DSPATR(BL)
+     A                                      COLOR(RED)
+     A            FMTEXT        70A  O 23 10DSPATR(BL)
+     A                                      COLOR(RED)
+     A            FMFUNC        78A  O 24  2COLOR(BLU)

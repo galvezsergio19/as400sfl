@@ -1,0 +1,146 @@
+     H*========================================================================*
+     H*                                                                        *
+     H*       AEON CREDIT SERVICE SYSTEM                                       *
+     H*                                                                        *
+     H*       PROJECT ID  :                                                    *
+     H*       PROGRAM-ID  :                                                    *
+     H*       FUNCTION    :                                                    *
+     H*       AUTHOR      :                                                    *
+     H*       CODING-DATE :                                                    *
+     H*                                                                        *
+     H*========================================================================*
+     H* Modification Logs                                                      *
+     H* ~~~~~~~~~~~~~~~~~                                                      *
+     H* Ver.   Project          PIC            Date        Description         *
+     H*------------------------------------------------------------------------*
+     H*========================================================================*
+     HDEBUG(*YES)
+     HOPTION(*NODEBUGIO)
+      ** Physical File
+     FCAM031PF  IF   E           K DISK
+      **‚Display file
+     FCAM033D   CF   E             WORKSTN
+     F                                     SFILE(SFL010:RRN)
+      **‚Data Structure
+     F                                     INFDS(INFDS)
+     DINFDS            DS
+     DRECNO                  378    379I 0
+     D                SDS
+     D W@PGID                  1     10A
+     D W@USID                254    263
+      **‚ Array Specification
+     D FNC             S             78    DIM(10) CTDATA PERRCD (1)
+      ** ‚Variables
+     D RRN             S                   LIKE(SFLRRN)
+     D SFLSIZ          S              4S 0 INZ(10)                              Subfile Size
+     D NXTPGCOUNT      s              2P 0 INZ(*ZEROS)
+     D FIRSTRRN        s              4P 0 INZ(*ZEROS)
+     D LSTPAGCNT       s              2P 0 INZ(*ZEROS)
+
+      *
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚MAIN PROCESSING
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C                   EXSR      LODSFL
+     C                   DOW       NOT(*INKA)
+      * Header Info
+     C                   EVAL      FHSYNM = 'CREDIT CARD SYSTEM'
+     C                   EVAL      FHFCNM = 'EXPANDED LOADING SUBFILE'
+     C                   EVAL      FHPGMQ = W@PGID
+     C                   EVAL      FHSFNM = W@USID
+     C                   EXSR      MAIN
+     C                   EXSR      DSPSFL
+     C                   ENDDO
+     C                   SETON                                            LR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚PAGE DOWN ROUTINE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     MAIN          BEGSR
+     C                   IF        *IN66 = *ON AND *INKA = *OFF
+      * <Page Down>
+     C                   IF        *IN13=*ON
+     C                   EXSR      NXTPAG
+     C                   EXSR      LODSFL
+     C                   ENDIF
+      * <Enter>
+     C                   ELSE
+     C                   EVAL      FIRSTRRN=RECNO
+     C                   ENDIF
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚NEXT PAGE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     NXTPAG        BEGSR
+     C                   EVAL      NXTPGCOUNT=0
+      *
+     C                   DO        SFLSIZ
+     C                   READ      CAM031PF
+      *
+     C                   IF        %EOF(CAM031PF)
+     C                   EVAL      LSTPAGCNT = NXTPGCOUNT
+     C     *HIVAL        SETLL     CAM031PF
+     C                   LEAVE
+     C                   ENDIF
+      *
+     C                   EVAL      NXTPGCOUNT=NXTPGCOUNT+1
+     C                   ENDDO
+      *
+     C                   DO        NXTPGCOUNT
+     C                   READP     CAM031PF
+     C                   ENDDO
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚CLEAR SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     CLRSFL        BEGSR
+     C                   EVAL      RRN = 0
+     C                   EVAL      *IN12 = *ON
+     C                   WRITE     CTL010
+     C                   EVAL      *IN12 = *OFF
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚LOAD SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     LODSFL        BEGSR
+     C                   EXSR      CLRSFL
+     C                   EVAL      *IN13 = *ON
+     C                   EVAL      FIRSTRRN = RRN + 1
+      *
+     C                   DO        SFLSIZ
+     C                   READ      CAM031PF
+      *
+     C                   IF        %EOF(CAM031PF)
+     C                   EVAL      *IN13 = *OFF
+     C                   LEAVESR
+     C                   ENDIF
+      *
+     C                   EVAL      S1CRNO = CACRNO
+     C                   EVAL      S1CRNM = CACRNM
+     C                   EVAL      S1CIFN = CACIFN
+     C                   EVAL      RRN += 1
+      *
+     C                   IF        RRN>9999
+     C                   LEAVE
+     C                   ENDIF
+      *
+     C                   WRITE     SFL010
+     C                   ENDDO
+      *
+     C                   EVAL      SFLRRN = 1
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚DISPLAY SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     DSPSFL        BEGSR
+     C                   EVAL      *IN10 = *OFF
+     C                   IF        RRN<=0
+     C                   EVAL      *IN10 = *ON
+     C                   ENDIF
+     C                   EVAL      FMFUNC = FNC(1)
+     C                   WRITE     FMTMSG
+     C                   WRITE     FMTHED
+     C                   EXFMT     CTL010
+     C                   EVAL      *IN10 = *OFF
+     C                   ENDSR
+** FNC (Function)
+F1=Exit

@@ -1,0 +1,237 @@
+     H*========================================================================*
+     H*                                                                        *
+     H*       AEON CREDIT SERVICE SYSTEM                                       *
+     H*                                                                        *
+     H*       PROJECT ID  :                                                    *
+     H*       PROGRAM-ID  :                                                    *
+     H*       FUNCTION    :                                                    *
+     H*       AUTHOR      :                                                    *
+     H*       CODING-DATE :                                                    *
+     H*                                                                        *
+     H*========================================================================*
+     H* Modification Logs                                                      *
+     H* ~~~~~~~~~~~~~~~~~                                                      *
+     H* Ver.   Project          PIC            Date        Description         *
+     H*------------------------------------------------------------------------*
+     H*========================================================================*
+      *       INDICATORS USED                                                  *
+      *       N10 : SFLDSP                                                     *
+      *       N11 : SFLDSPCTL                                                  *
+      *        12 : SFLCLR                                                     *
+      *       N13 : SFLEND                                                     *
+      *        13 : SFLNXTCHG                                                  *
+      *        50 : S1OPTN ( RI AND PC )                                       *
+      *        15 : ROLLUP / PAGEDOWN                                          *
+      *        16 : ROLLDOWN / PAGEUP                                          *
+     H*========================================================================*
+     H OPTION(*NODEBUGIO)
+     ‚** Physical File
+     FCAM031PF  IF   E           K DISK
+     ‚** Display file
+     FCAM032D   CF   E             WORKSTN SFILE(SFL010:sRRN)
+     ‚**  Array Specification
+     D FNC             S             78    DIM(10) CTDATA PERRCD (1)
+     D ERR             S             78    DIM(10) CTDATA PERRCD (1)
+     ‚**  Data Structure
+     D                SDS
+     D w@pgid                  1     10A
+     D w@usid                254    263
+     ‚**  Variables
+     D SRRN            S                   LIKE(SFLRRN)
+     D SRRNERR         S                   LIKE(SFLRRN)                         1st Error Cursor
+     D NXTRRN          S                   LIKE(CACRNO)                         Fst Record per page
+     D PRVRRN          S                   LIKE(CACRNO)                         Lst Record per page
+     D SFLSIZ          S              4S 0 INZ(10)                              Subfile Size
+     D STOP            S               N   INZ(*ON)                             SFL Indicator at TOP
+     D SCOUNT          S              4S 0                                      Count no. of errors
+     D STEP            S             10A
+      *
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚                 MAIN PROCESSING
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C                   EVAL      STEP     =    'INT010'
+     C     STEP          DOUEQ     'EXIT  '
+     C     STEP          CASEQ     'INT010'      INT010
+     C     STEP          CASEQ     'PAGDWN'      PAGDWN
+     C     STEP          CASEQ     'PAGEUP'      PAGEUP
+     C     STEP          CASEQ     'DSP010'      DSP010
+     C     STEP          CASEQ     'VAL010'      VAL010
+     C     STEP          CASEQ     'INF010'      INF010
+     C                   ENDCS
+     C                   ENDDO
+     C                   EVAL      *INLR    =    '1'
+
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*                 ‚INITIALIZE SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     INT010        BEGSR
+     C                   EVAL      STEP     =    'PAGDWN'
+     C                   EVAL      *IN12    =    *ON
+     C                   WRITE     CTL010
+     C                   EVAL      *IN12    =    *OFF
+     C                   EVAL      SRRN     =    *ZERO
+      *‚Header Info
+     C                   EVAL      FHSYNM   =    'CREDIT CARD SYSTEM'
+     C                   EVAL      FHFCNM   =    'FULL LOADING SUBFILE'
+     C                   EVAL      FHPGMQ   =    W@PGID
+     C                   EVAL      FHSFNM   =    W@USID
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚                 PAGE DOWN
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     PAGDWN        BEGSR
+     C                   EXSR      INT010
+     C                   EVAL      STEP     =    'DSP010'
+     C     NXTRRN        SETLL     CAM031PF
+     C                   READ      CAM031PF
+     C                   EVAL      PRVRRN   =    CACRNO
+     C                   DOW       NOT %EOF(CAM031PF) AND SRRN < SFLSIZ
+     C                   EVAL      S1CRNO   =    CACRNO
+     C                   EVAL      S1CRNM   =    CACRNM
+     C                   EVAL      S1CIFN   =    CACIFN
+     C                   EVAL      SRRN     +=   1
+     C                   WRITE     SFL010
+     C                   READ      CAM031PF
+     C                   ENDDO
+     C                   EVAL      SFLRRN   =    1                              RESET RRN
+     C                   EVAL      SRRN     =    0                              RESET RRN
+      *‚If EOF, Set SFLEND
+     C                   EVAL      *IN13    =    *ON
+     C                   IF        %EOF(CAM031PF)
+     C                   EVAL      *IN13    =    *OFF
+     C                   EVAL      NXTRRN   =    PRVRRN
+     C                   ELSE
+     C                   EVAL      *IN13    =    *ON
+     C                   EVAL      NXTRRN   =    CACRNO
+     C                   ENDIF
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*                 ‚DISPLAY SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     DSP010        BEGSR
+     C                   EVAL      FMFUNC   =    FNC(1)
+     C                   WRITE     FMTMSG
+     C                   WRITE     FMTHED
+     C                   EXFMT     CTL010
+     C                   SELECT
+      *‚F1 = Exit
+     C                   WHEN      *INKA    =    *ON
+     C                   EVAL      STEP     =    'EXIT'
+      *‚Page Down
+     C                   WHEN      *IN15    =    *ON
+     C                   IF        *IN13    =    *ON
+     C                   EVAL      STEP     =    'PAGDWN'
+     C                   EVAL      STOP     =    *OFF
+     C                   ENDIF
+      *‚Page Up
+     C                   WHEN      *IN16    =    *ON
+     C                   IF        STOP     =    *OFF
+     C                   EVAL      STEP     =    'PAGEUP'
+     C                   ENDIF
+      *‚Enter
+     C                   OTHER
+     C                   EVAL      STEP     =    'VAL010'
+     C                   ENDSL
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚                 PAGE UP
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     PAGEUP        BEGSR
+     C                   EVAL      STEP     =    'DSP010'
+     C                   EXSR      INT010
+     C     PRVRRN        SETLL     CAM031PF
+     C                   DO        SFLSIZ
+     C                   READP     CAM031PF
+     C                   ENDDO
+     C                   IF        %EOF(CAM031PF)
+     C     *LOVAL        SETLL     CAM031PF
+     C                   EVAL      STOP     =    *ON
+     C                   ENDIF
+     C                   EVAL      NXTRRN   =    CACRNO
+     C                   EVAL      STEP     =    'PAGDWN'
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚                 VALIDATE OPTIONS
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     VAL010        BEGSR
+     C                   EVAL      STEP     =    'DSP010'
+     C                   EVAL      FMCODE   =    *BLANKS
+     C                   EVAL      FMTEXT   =    *BLANKS
+     C                   EVAL      SCOUNT   =    0
+     C                   EVAL      SRRNERR  =    0
+     C                   READC     SFL010
+     C                   DOW       NOT %EOF
+     C                   SELECT
+      *‚Input = Blanks
+     C                   WHEN      S1OPTN   =    *BLANKS
+     C                   EVAL      *IN50    =    *OFF
+     C                   EVAL      *IN14    =    *OFF
+     C                   EVAL      FMCODE   =    *BLANKS
+     C                   EVAL      FMTEXT   =    *BLANKS
+      *‚Input = 1
+     C                   WHEN      S1OPTN   =    '1'
+     C                   EVAL      *IN50    =    *OFF
+     C                   EVAL      *IN14    =    *ON
+     C                   EVAL      SCOUNT   +=   1
+     C                   IF        SCOUNT   >    1
+     C                   EVAL      *IN50    =    *ON
+     C                   EVAL      FMCODE   =    'MCM001'
+     C                   EVAL      FMTEXT   =    ERR(1)
+     C                   ENDIF
+      *‚Input <> 1
+     C                   WHEN      S1OPTN   <>   '1'
+     C                   EVAL      *IN50    =    *ON
+     C                   EVAL      *IN14    =    *ON
+     C                   EVAL      FMCODE   =    'MCM001'
+     C                   EVAL      FMTEXT   =    ERR(1)
+     C                   IF        SRRNERR  =    0
+     C                   EVAL      SRRNERR  =    SRRN
+     C                   ENDIF
+     C                   ENDSL
+      *
+     C                   UPDATE    SFL010
+     C                   READC     SFL010
+     C                   ENDDO
+      *‚No Errors > Display
+     C                   IF        SCOUNT = 1 AND SRRNERR = 0
+     C                   EVAL      STEP     =    'INF010'
+     C                   ENDIF
+      *
+     C                   IF        SRRNERR <> 0
+     C                   EVAL      SFLRRN   =    SRRNERR
+     C                   ENDIF
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚                 DISPLAY INFORMATION
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     INF010        BEGSR
+     C                   READC     SFL010
+     C                   EVAL      F1CRNO   =    S1CRNO
+     C                   EVAL      F1CRNM   =    S1CRNM
+     C                   EVAL      F1CIFN   =    S1CIFN
+     C                   EVAL      FMFUNC   =    FNC(2)
+     C                   WRITE     FMTMSG
+     C                   WRITE     FMTHED
+     C                   EXFMT     FMT010
+      *‚Function Keys
+     C                   SELECT
+     C                   WHEN      *INKB    =    *ON
+     C                   EVAL      S1OPTN   =    *BLANKS
+     C                   EVAL      SFLRRN   =     SRRN
+     C                   OTHER
+     C                   EVAL      S1OPTN   =    *BLANKS
+     C                   EVAL      SFLRRN   =    1
+     C                   ENDSL
+     C                   EVAL      STEP     =    'DSP010'
+      *
+     C                   IF        NOT %EOF
+     C                   UPDATE    SFL010
+     C                   READC     SFL010
+     C                   ENDIF
+     C                   ENDSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+** FNC (Function)
+F1=Exit
+F2=Previous
+** ERR (Error)
+Input Error.

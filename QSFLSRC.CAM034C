@@ -1,0 +1,12 @@
+             PGM        PARM(&MSGID &MSGF &MSGOPT)
+             DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MSGF) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGOPT) TYPE(*CHAR) LEN(1)
+
+             IF         COND(&MSGOPT *EQ 'I') THEN(SNDPGMMSG +
+                        MSGID(&MSGID) MSGF(&MSGF))
+
+             IF         COND(&MSGOPT *EQ 'C') THEN(RMVMSG PGMQ(*PRV +
+                          (*)) CLEAR(*ALL))
+
+             ENDPGM

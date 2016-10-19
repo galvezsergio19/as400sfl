@@ -1,0 +1,247 @@
+     H*========================================================================*
+     H*                                                                        *
+     H*       AEON CREDIT SERVICE SYSTEM                                       *
+     H*                                                                        *
+     H*       PROJECT ID  :                                                    *
+     H*       PROGRAM-ID  :                                                    *
+     H*       FUNCTION    :                                                    *
+     H*       AUTHOR      :                                                    *
+     H*       CODING-DATE :                                                    *
+     H*                                                                        *
+     H*========================================================================*
+     H* Modification Logs                                                      *
+     H* ~~~~~~~~~~~~~~~~~                                                      *
+     H* Ver.   Project          PIC            Date        Description         *
+     H*------------------------------------------------------------------------*
+     H*========================================================================*
+     H OPTION( *NODEBUGIO )
+
+     ‚** Display File
+     FCAM035D   CF   E             WORKSTN SFILE( SFL010 : sRRN )
+     F                                     InfDS( InfDS )
+
+     ‚** Physical File
+     D Extend        E DS                  ExtName( CAM031PF )
+     D InfDS           DS
+     D   RecNo                        5I 0 OverLay( Infds : 378 )
+
+     ‚**  Array Specification
+     D FNC             S             78    Dim( 10 ) CtData PerRcd( 1 )
+     D ERR             S             78    Dim( 10 ) CtData PerRcd( 1 )
+
+     ‚**  Data Structure
+     D sysIND         SDS
+     D   wkPGID          *PROC
+     D   wkUSID                      10A   OverLay( sysIND : 254 )
+
+     ‚**  Variables
+     D sRRN            S                   Like( SFLrrN )
+     D RECNUM          S                   Like( SFLrrN )
+     D SCOUNT          S              4S 0                                      Count no. of errors
+     D sRRNERR         S                   Like( SFLrrN )                       1st Error Cursor
+     D wkSTEP          S             10A
+      *
+     D strCMD          S            256A   Varying
+     D SqlCMD          C                   'Select * From CAM031PF'
+
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚Main Process
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C                   EvaL      wkSTEP   =    'INT010'
+     C     wkSTEP        DouEQ     'EXIT  '
+     C     wkSTEP        CasEQ     'INT010'      INT010
+     C     wkSTEP        CasEQ     'LOD010'      LOD010
+     C     wkSTEP        CasEQ     'DSP010'      DSP010
+     C     wkSTEP        CasEQ     'VAL010'      VAL010
+     C     wkSTEP        CasEQ     'INF010'      INF010
+     C                   EndCS
+     C                   EndDo
+     C                   EvaL      *INLR = '1'
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*                 ‚INITIALIZE SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     INT010        BegSR
+      *
+     C                   Clear                   Extend
+     C                   EvaL      strCMD = SqlCMD
+      *
+     C/EXEC SQL
+     C+  Set Option COMMIT = *NONE,
+     C+             DATFMT = *ISO
+     C/END-EXEC
+      *
+     C/EXEC SQL
+     C+  Declare C1 Insensitive Cursor for wkSelect
+     C/END-EXEC
+      *
+     C/EXEC SQL
+     C+  Prepare wkSelect from :StrCMD
+     C/END-EXEC
+      *
+     C/EXEC SQL
+     C+  Open C1
+     C/END-EXEC
+      *
+     C                   EvaL      RecNo    =    *ZERO
+     C                   EvaL      wkSTEP   =    'LOD010'
+     C                   EvaL      *IN12    =    *ON
+     C                   Write     CTL010
+     C                   EvaL      *IN12    =    *OFF
+     C                   EvaL      sRRN     =    *ZERO
+      *‚Header Info
+     C                   EvaL      FHSYNM   =    'CREDIT CARD SYSTEM'
+     C                   EvaL      FHFCNM   =    'FULL LOADING SUBFILE'
+     C                   EvaL      FHPGMQ   =    wkPGID
+     C                   EvaL      FHSFNM   =    wkUSID
+      *
+     C                   EndSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*                 ‚LOAD SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     LOD010        BegSR
+
+     C                   EvaL      wkSTEP   =    'DSP010'
+     C                   EvaL      RecNum   =    RecNo                          RESET RRN
+      *
+     C                   Dow       SQLCOD = 0
+      *
+     C                   If        SQLCOD <> 0
+     C                   Leave
+     C                   EndIF
+      *
+     C/EXEC SQL
+     C+  Fetch Next From C1
+     C+  Into :Extend
+     C/END-EXEC
+      *
+     C                   EvaL      S1CRNO   =    CACRNO
+     C                   EvaL      S1CRNM   =    CACRNM
+     C                   EvaL      S1CIFN   =    CACIFN
+     C                   EvaL      sRRN     +=   1
+     C                   Write     SFL010
+     C                   EndDo
+     C*‚Set cursor to 1st
+     C*‚record of subfile page
+     C                   EvaL      SFLrrN   =    1                              RESET RRN
+     C                   If        SQLCOD <> 0
+     C                   EvaL      *IN13    =    *OFF                           SFLEND
+     C                   EndIF
+      *
+     C/EXEC SQL
+     C+  Close C1
+     C/END-EXEC
+      *
+     C                   EndSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*                 ‚DISPLAY SUBFILE
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     DSP010        BegSR
+      *
+     C                   IF        RecNo    <>   0
+     C                   EvaL      SFLrrN   =    RecNo
+     C                   EndIF
+     C                   EvaL      FMFUNC   =    FNC(1)
+     C                   Write     FMTMSG
+     C                   Write     FMTHED
+     C                   ExFMT     CTL010
+     C                   Select
+      *‚F1 = Exit
+     C                   When      *INKA    =    *ON
+     C                   EvaL      wkSTEP   =    'EXIT'
+      *‚Enter
+     C                   Other
+     C                   EvaL      wkSTEP   =    'VAL010'
+     C                   EndSL
+      *
+     C                   EndSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+      *‚VALIDATE OPTIONS
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     VAL010        BegSR
+      *
+     C                   EvaL      wkSTEP   =    'DSP010'
+     C                   EvaL      FMCODE   =    *BLANKS
+     C                   EvaL      FMTEXT   =    *BLANKS
+     C                   EvaL      sCount   =    0
+     C                   EvaL      sRRNErr  =    0
+     C                   ReadC     SFL010
+     C                   Dow       Not %EOF
+     C                   Select
+      *‚Input = Blank
+     C                   When      S1OPTN   =    *Blanks
+     C                   EvaL      *IN50    =    *OFF
+     C                   EvaL      *IN14    =    *OFF
+     C                   EvaL      FMCODE   =    *Blanks
+     C                   EvaL      FMTEXT   =    *Blanks
+      *‚Input = 1
+     C                   When      S1OPTN   =    '1'
+     C                   EvaL      *IN50    =    *OFF
+     C                   EvaL      *IN14    =    *ON
+     C                   EvaL      SCOUNT   +=   1
+     C                   If        SCOUNT   >    1
+     C                   EvaL      *IN50    =    *ON
+     C                   EvaL      FMCODE   =    'MCM001'
+     C                   EvaL      FMTEXT   =    ERR(1)
+     C                   EndIF
+      *‚Input <> 1
+     C                   When      S1OPTN   <>   '1'
+     C                   EvaL      *IN50    =    *ON
+     C                   EvaL      *IN14    =    *ON
+     C                   EvaL      FMCODE   =    'MCM001'
+     C                   EvaL      FMTEXT   =    ERR(1)
+     C                   IF        sRRNErr  =    0
+     C                   EvaL      sRRNErr  =    sRRN
+     C                   EndIF
+     C                   EndSL
+      *
+     C                   Update    SFL010
+     C                   ReadC     SFL010
+     C                   EndDo
+      *
+      *‚No Error > Display
+      *
+     C                   IF        sCount = 1 and sRRNErr = 0
+     C                   EvaL      wkSTEP   =    'INF010'
+     C                   EndIF
+      *
+     C                   IF        sRRNErr  <>   0
+     C                   EvaL      SFLrrN   =    sRRNErr
+     C                   EndIF
+      *
+     C                   EndSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     ˆ*‚DISPLAY INFORMATION
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+     C     INF010        BegSR
+      *
+     C                   ReadC     SFL010
+     C                   EvaL      F1CRNO   =    S1CRNO
+     C                   EvaL      F1CRNM   =    S1CRNM
+     C                   EvaL      F1CIFN   =    S1CIFN
+     C                   EvaL      FMFUNC   =    FNC(2)
+     C                   Write     FMTMSG
+     C                   Write     FMTHED
+     C                   ExFMT     FMT010
+      *‚Function Keys
+     C                   Select
+     C                   When      *INKB
+     C                   EvaL      S1OPTN   =    *BLANKS
+     C                   EvaL      SFLRRN   =    sRRN
+     C                   Other
+     C                   EvaL      S1OPTN   =    *BLANKS
+     C                   EvaL      SFLRRN   =    1
+     C                   EndSL
+     C                   EvaL      wkSTEP   =    'DSP010'
+      *
+     C                   IF        Not %EOF
+     C                   Update    SFL010
+     C                   ReadC     SFL010
+     C                   EndIF
+      *
+     C                   EndSR
+     ˆ*==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--===
+** FNC (Function)
+F1=Exit
+F2=Previous
+** ERR (Error)
+Input Error.
